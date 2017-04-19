@@ -6,14 +6,6 @@ module RemoteEval
 
     export eval_command_remotely
 
-    # Compatitbily with 0.5
-    if !isdefined(Base,:(showlimited))
-        showlimited(x) = show(x)
-        showlimited(io::IO,x) = show(io,x)
-    else
-        import Base.showlimited
-    end
-
     #FIXME dirty hack
     function clean_error_msg(s::String)
         r  = Regex("(.*)in eval_command_remotely.*","s")
@@ -40,7 +32,7 @@ module RemoteEval
             v = eval(eval_in,ex)
             eval(eval_in, :(ans = $(Expr(:quote, v))))
 
-            evalout = v == nothing ? "" : sprint(showlimited,v)
+            evalout = v == nothing ? "" : sprint(show,"text/plain",v)
         catch err
             bt = catch_backtrace()
             evalout = clean_error_msg( sprint(showerror,err,bt) )
@@ -55,3 +47,4 @@ module RemoteEval
     end
 
 end
+
