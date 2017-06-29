@@ -15,10 +15,18 @@ module RemoteEval
     end
     
     function trim(s::AbstractString,L::Int)#need to be AbstracString to accept SubString
-    if length(s) > L
-        return string(s[1:L],"...")
+        if length(s) > L
+            return string(s[1:L],"...")
+        end
+        s
     end
-    s
+
+    function format_output(x)
+        io = IOBuffer()
+        io = IOContext(io,:display_size=>(20,20))
+        io = IOContext(io,:limit=>true)
+        show(io,MIME"text/plain"(),x)
+        takebuf_string(io.io)
     end
 
     function eval_command_remotely(cmd::String,eval_in::Module)
@@ -31,14 +39,15 @@ module RemoteEval
         try
             v = eval(eval_in,ex)
             eval(eval_in, :(ans = $(Expr(:quote, v))))
+            
+            evalout = v == nothing ? "" : format_output(v)
 
-            evalout = v == nothing ? "" : sprint(show,"text/plain",v)
         catch err
             bt = catch_backtrace()
             evalout = clean_error_msg( sprint(showerror,err,bt) )
         end
 
-        evalout = trim(evalout,2000)
+        evalout = trim(evalout,4000)
         finalOutput = evalout == "" ? "" : "$evalout\n"
         v = typeof(v) <: Gadfly.Plot ? v : nothing #FIXME refactor. This avoid sending types that
         # are not defined on worker 1
