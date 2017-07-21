@@ -8,9 +8,17 @@ module RemoteEval
 
     #FIXME dirty hack
     function clean_error_msg(s::String)
-        r  = Regex("(.*)in eval_command_remotely.*","s")
-        m = match(r,s)
-        m != nothing && return m.captures[1]
+    
+        if VERSION < v"0.6.0"
+    
+            r  = Regex("(.*)in eval_command_remotely.*","s")
+            m = match(r,s)
+            m != nothing && return m.captures[1]
+        else
+            r  = Regex("(.*)\\[\\d\\] eval_command_remotely.*""","s")
+            m = match(r,s)
+            m != nothing && return m.captures[1]
+        end
         s
     end
 
