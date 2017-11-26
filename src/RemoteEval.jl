@@ -4,7 +4,7 @@ module RemoteEval
     using Reexport
     @reexport using Gadfly
     
-    export eval_command_remotely, isdone, kill, run_task
+    export eval_command_remotely, isdone, interrupt_task, run_task, eval_symbol
 
     function __init__()
         global _run_task = @schedule begin end
@@ -12,7 +12,7 @@ module RemoteEval
 
     run_task() = _run_task
     isdone() = _run_task.state == :done
-    kill() = @schedule Base.throwto(_run_task, InterruptException())
+    interrupt_task() = @schedule Base.throwto(_run_task, InterruptException())
     
     #FIXME dirty hack
     function clean_error_msg(s::String)
@@ -49,7 +49,7 @@ module RemoteEval
         global _run_task = @schedule _eval_command_remotely(cmd,eval_in)
         nothing
     end
-
+    
     function _eval_command_remotely(cmd::String,eval_in::Module)
         ex = Base.parse_input_line(cmd)
         ex = expand(ex)
@@ -75,5 +75,21 @@ module RemoteEval
         return finalOutput, v
     end
 
+    """
+        eval_symbol(s::Symbol,eval_in::Module)
+        
+    eval the symbol in module eval_in, used for data hint.
+        
+    """
+    function eval_symbol(s::Symbol,eval_in::Module)
+        evalout = try eval(eval_in,s) catch err "" end
+    end
+
+    function get_doc(s::Symbol,eval_in::Module)
+        Base.Docs.doc(
+            Base.Docs.Binding(eval_in,s)
+        )
+    end
+    
 
 end
